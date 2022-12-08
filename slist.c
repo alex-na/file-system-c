@@ -3,7 +3,7 @@
 #include <alloca.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 #include "slist.h"
 
 slist_t *s_cons(const char *text, slist_t *rest) {
@@ -29,6 +29,7 @@ void s_free(slist_t *xs) {
 }
 
 slist_t *s_explode(const char *text, char delim) {
+	printf("s_explode text = %s\n", text);
   if (*text == 0) {
     return 0;
   }

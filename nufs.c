@@ -18,12 +18,12 @@
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
+
 // implementation for: man 2 access
 // Checks if a file exists.
 int nufs_access(const char *path, int mask) {
   int rv = 0;
-	int fileInum = tree_lookup(path);
-	if (fileInum == -1) rv = -ENOENT;
+  if (tree_lookup(path) == -1) rv = -ENOENT;
   printf("access(%s, %04o) -> %d\n", path, mask, rv);
   return rv;
 }
@@ -32,6 +32,8 @@ int nufs_access(const char *path, int mask) {
 // Implementation for: man 2 stat
 // This is a crucial function.
 int nufs_getattr(const char *path, struct stat *st) {
+	printf("%s\n", path);
+	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, 0, st->st_mode, st->st_size);
 	int fileInum = tree_lookup(path);
 	if (fileInum == -1) return -ENOENT;
 	inode_t * fileNode = get_inode(fileInum); 
@@ -43,10 +45,10 @@ int nufs_getattr(const char *path, struct stat *st) {
 	st->st_ino = fileInum;
 	st->st_nlink = fileNode->refs;
 	st->st_blksize = 4096;
-	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, 0, st->st_mode, st->st_size);
   return 0;
 }
 
+// /foo /foo/bar /foo/bar/hello.txt
 int helper_readdir(inode_t * dd, void *buf, fuse_fill_dir_t filler) {
 	dirent_t * dir_entries = (dirent_t *)blocks_get_block(dd->block);
 	struct stat st;
@@ -68,15 +70,17 @@ int helper_readdir(inode_t * dd, void *buf, fuse_fill_dir_t filler) {
 // implementation for: man 2 readdir
 // lists the contents of a directory
 // for each file, call getattr.
+// /foo/bar/hello.txt
+// /foo -> /foo/bar -> /foo/bar/hello.txt
 int nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                  off_t offset, struct fuse_file_info *fi) {
+	printf("readdir(%s) -> %d\n", path, 0);
 	int dirInum = tree_lookup(path);
 	if (dirInum == -1) return -ENOENT;
 	inode_t * dirNode = get_inode(dirInum);
 	if (dirNode == NULL) return -ENOENT;
 	if (dirNode->mode == 1) return -ENOENT; // OR RETURN ENOENT?
 	helper_readdir(dirNode, buf, filler);
-  printf("readdir(%s) -> %d\n", path, 0);
   return 0;
 }
 
@@ -86,6 +90,7 @@ int nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 // function.
 int nufs_mknod(const char *path, mode_t mode, dev_t rdev) {
   int rv = -1;
+	rv = storage_mknod(path, mode);
   printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
   return rv;
 }

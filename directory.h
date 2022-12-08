@@ -26,5 +26,11 @@ int directory_put(inode_t *dd, const char *name, int inum);
 int directory_delete(inode_t *dd, const char *name);
 slist_t *directory_list(const char *path);
 void print_directory(inode_t *dd);
+int updateParentAndCreate(inode_t * curr_dir_inode, const char * file_name, int isDir);
+int updateParentAndRemove(inode_t * curr_dir_inode, const char * file_name);
+int get_parent_inum(const char * path, int removeHuh, int dirHuh);
+int createFile(const char * path);
+int removeFile(const char * path);
+int createDirectory(const char * path);
 
 #endif
