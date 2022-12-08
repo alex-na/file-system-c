@@ -2,13 +2,18 @@
 
 #include <assert.h>
 #include <bsd/string.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "blocks.h"
+#include "bitmap.h"
+#include "inode.h"
+#include "storage.h"
+#include "directory.h"
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
@@ -17,14 +22,8 @@
 // Checks if a file exists.
 int nufs_access(const char *path, int mask) {
   int rv = 0;
-
-  // Only the root directory and our simulated file are accessible for now...
-  if (strcmp(path, "/") == 0 || strcmp(path, "/hello.txt") == 0) {
-    rv = 0;
-  } else { // ...others do not exist
-    rv = -ENOENT;
-  }
-
+	int fileInum = tree_lookup(path);
+	if (fileInum == -1) rv = -ENOENT;
   printf("access(%s, %04o) -> %d\n", path, mask, rv);
   return rv;
 }
@@ -33,44 +32,51 @@ int nufs_access(const char *path, int mask) {
 // Implementation for: man 2 stat
 // This is a crucial function.
 int nufs_getattr(const char *path, struct stat *st) {
-  int rv = 0;
+	int fileInum = tree_lookup(path);
+	if (fileInum == -1) return -ENOENT;
+	inode_t * fileNode = get_inode(fileInum); 
+	if (fileNode == NULL) return -ENOENT;
+	if (fileNode->mode == 0) st->st_mode = 040755; // DOUBLE CHECK MODE VALUES, WHATS DIR/FILE
+	else st->st_mode = 0100644;
+	st->st_size = fileNode->size;
+	st->st_uid = getuid();
+	st->st_ino = fileInum;
+	st->st_nlink = fileNode->refs;
+	st->st_blksize = 4096;
+	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, 0, st->st_mode, st->st_size);
+  return 0;
+}
 
-  // Return some metadata for the root directory...
-  if (strcmp(path, "/") == 0) {
-    st->st_mode = 040755; // directory
-    st->st_size = 0;
-    st->st_uid = getuid();
-  }
-  // ...and the simulated file...
-  else if (strcmp(path, "/hello.txt") == 0) {
-    st->st_mode = 0100644; // regular file
-    st->st_size = 6;
-    st->st_uid = getuid();
-  } else { // ...other files do not exist on this filesystem
-    rv = -ENOENT;
-  }
-  printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode,
-         st->st_size);
-  return rv;
+int helper_readdir(inode_t * dd, void *buf, fuse_fill_dir_t filler) {
+	dirent_t * dir_entries = (dirent_t *)blocks_get_block(dd->block);
+	struct stat st;
+	for (int i = 0; i < dd->size; ++i) {
+		inode_t * fileNode = get_inode(dir_entries[i].inum);
+		assert(fileNode != NULL);
+		if (fileNode->mode == 0) st.st_mode = 040755; // DOUBLE CHECK MODE VALUES, WHATS DIR/FILE
+	  else st.st_mode = 0100644;
+		st.st_size = fileNode->size;
+ 	 	st.st_uid = getuid();
+ 		st.st_ino = dir_entries[i].inum;
+ 	  st.st_nlink = fileNode->refs;
+ 	  st.st_blksize = 4096;
+		filler(buf, dir_entries[i].name,&st, 0);
+	}
+	return 0;
 }
 
 // implementation for: man 2 readdir
 // lists the contents of a directory
+// for each file, call getattr.
 int nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                  off_t offset, struct fuse_file_info *fi) {
-  struct stat st;
-  int rv;
-
-  rv = nufs_getattr("/", &st);
-  assert(rv == 0);
-
-  filler(buf, ".", &st, 0);
-
-  rv = nufs_getattr("/hello.txt", &st);
-  assert(rv == 0);
-  filler(buf, "hello.txt", &st, 0);
-
-  printf("readdir(%s) -> %d\n", path, rv);
+	int dirInum = tree_lookup(path);
+	if (dirInum == -1) return -ENOENT;
+	inode_t * dirNode = get_inode(dirInum);
+	if (dirNode == NULL) return -ENOENT;
+	if (dirNode->mode == 1) return -ENOENT; // OR RETURN ENOENT?
+	helper_readdir(dirNode, buf, filler);
+  printf("readdir(%s) -> %d\n", path, 0);
   return 0;
 }
 
@@ -198,8 +204,8 @@ struct fuse_operations nufs_ops;
 
 int main(int argc, char *argv[]) {
   assert(argc > 2 && argc < 6);
-  printf("TODO: mount %s as data file\n", argv[--argc]);
-  // storage_init(argv[--argc]);
+  //printf("TODO: mount %s as data file\n", argv[--argc]);
+  storage_init(argv[--argc]);
   nufs_init_ops(&nufs_ops);
   return fuse_main(argc, argv, &nufs_ops, NULL);
 }

@@ -11,11 +11,14 @@
 
 #include <stdio.h>
 
-const int BLOCK_COUNT; // we split the "disk" into blocks (default = 256)
-const int BLOCK_SIZE;  // default = 4K
-const int NUFS_SIZE;   // default = 1MB
+extern const int BLOCK_COUNT; // we split the "disk" into blocks (default = 256)
+extern const int BLOCK_SIZE;  // default = 4K
+extern const int NUFS_SIZE;   // default = 1MB
 
-const int BLOCK_BITMAP_SIZE; // default = 256 / 8 = 32
+extern const int BLOCK_BITMAP_SIZE; // default = 256 / 8 = 32
+
+// ADD COMMENT LATER
+void *get_blocks_inode_table();
 
 /** 
  * Compute the number of blocks needed to store the given number of bytes.

@@ -19,6 +19,8 @@
 
 #include "bitmap.h"
 #include "blocks.h"
+#include "directory.h"
+#include "inode.h"
 
 const int BLOCK_COUNT = 256; // we split the "disk" into 256 blocks
 const int BLOCK_SIZE = 4096; // = 4K
@@ -29,7 +31,6 @@ const int BLOCK_BITMAP_SIZE = BLOCK_COUNT / 8;
 
 static int blocks_fd = -1;
 static void *blocks_base = 0;
-
 // Get the number of blocks needed to store the given number of bytes.
 int bytes_to_blocks(int bytes) {
   int quo = bytes / BLOCK_SIZE;
@@ -57,7 +58,10 @@ void blocks_init(const char *image_path) {
 
   // block 0 stores the block bitmap and the inode bitmap
   void *bbm = get_blocks_bitmap();
+  
   bitmap_put(bbm, 0, 1);
+  bitmap_put(bbm, 1, 1);
+  directory_init();
 }
 
 // Close the disk image.
@@ -102,3 +106,9 @@ void free_block(int bnum) {
   void *bbm = get_blocks_bitmap();
   bitmap_put(bbm, bnum, 0);
 }
+
+void *get_blocks_inode_table() {
+  return blocks_get_block(1);
+}
+
+
