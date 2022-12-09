@@ -112,12 +112,13 @@ int updateParentAndRemove(inode_t * curr_dir_inode, const char * file_name) {
 // /foo/hello.txt -> / -> foo hello.txt
 // FREE THE SLIST_T!!!
 int get_parent_inum(const char * path, int removeHuh, int dirHuh) {
-	printf("path= %s\n", path); // this prints path correct 
 	slist_t * curr_file_name = s_explode(path, '/');
-	printf("curr_file_name%s\n", curr_file_name[0].data); // this prints nothing
 	// if the file is something like /hello.txt -> the parent is the root.
   inode_t * curr_dir_inode = get_inode(2);
-	if (curr_file_name->next = NULL) {
+	if (strlen(curr_file_name->data) <= 1) curr_file_name = curr_file_name->next;
+  printf("curr_file_name %s, curr'next = %p\n", curr_file_name->data, curr_file_name->next);	
+	if (curr_file_name->next == NULL) {
+		printf("In here!!!!\n");
     if (removeHuh) return updateParentAndRemove(curr_dir_inode, curr_file_name->data);
     else return updateParentAndCreate(curr_dir_inode, curr_file_name->data, dirHuh);
   }
