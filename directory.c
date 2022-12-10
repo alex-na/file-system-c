@@ -39,7 +39,7 @@ int directory_lookup(inode_t *dd, const char *name){
   int num_files = dd->size;
   dirent_t * block = (dirent_t *) blocks_get_block(bnum);
   for (int i = 0; i < num_files; ++ i) {
-		printf("Looking for: %s, curr: %s\n", name, block[i].name);
+		printf("Looking for %s, curr = %s, in dir's size: %d\n", name, block[i].name, dd->size);
     if (strcmp(block[i].name, name) == 0) {
 			return block[i].inum;
 		}
@@ -84,7 +84,6 @@ int getParent(const char * path) {
 	int curr_file_inum = -1;
   while (curr_file->next) {
     curr_file_inum = directory_lookup(curr_dir, curr_file->data);
-		printf("curr_dir's inum: %d\n", curr_file_inum);
 		if (curr_file_inum == -1) return -1;
     curr_dir = get_inode(curr_file_inum);
     curr_file = curr_file->next;
@@ -101,7 +100,6 @@ int updateParentAndCreate(inode_t * curr_dir_inode, const char * file_name, int 
 	if (size == -1) targetSize = 0;
   if (allocatedBlock != -1 && allocatedInum != -1) {
     directory_put(curr_dir_inode, file_name, allocatedInum);
-//	  curr_dir_inode->size++;
     inode_t * new_file_node = get_inode(allocatedInum);
     new_file_node->mode = 1;
     new_file_node->refs = 1;
@@ -140,27 +138,20 @@ int updateParentAndCreate(inode_t * curr_dir_inode, const char * file_name, int 
 // director_replace() -> replace the ".."'s inum to be the parent of the to's inum
 
 int renameHelper(const char * from, const char * to) {
-	printf("from: %s, to: %s\n", from, to);
-//	int fromInum = get_parent_inum(from, 0, 1, 0);
 	int fromParentInum = getParent(from);
 	if (fromParentInum == -1) return -ENOENT;
 	inode_t * fromParentNode = get_inode(fromParentInum);
 	slist_t * fromTarget = getTarget(from);
-	printf("Directory lookup!!\n");
 	int fromInum = directory_lookup(get_inode(fromParentInum), fromTarget->data);
-	printf("Removing!!!\n");
 	if (updateParentAndRemove(fromParentNode, fromTarget->data, 1) == -1) return -ENOENT;
-	printf("From inum : %d\n", fromInum);
 	if (fromInum == -1) return -ENOENT;
 	inode_t * fromNode = get_inode(fromInum);
 	int fileType = 0;
 	if (fromNode->mode == 0) fileType = 1;
 	int toParentInum = getParent(to);
-	printf("From inum = %d, toParentInum = %d\n", fromInum, toParentInum);
 	if (toParentInum == -1) return -ENOENT;
 	inode_t * parentInode= get_inode(toParentInum);
 	slist_t * target = getTarget(to);
-	printf("Target: %s\n", target->data);
 	int rv = updateParentAndCreate(parentInode, target->data, fileType, fromNode->block, fromInum, fromNode->size);
 	s_free(target);
 	return rv;
@@ -195,9 +186,7 @@ int get_parent_inum(const char * path, int removeHuh, int renameHuh, int dirHuh)
 	if (strlen(curr_file_name->data) <= 1) curr_file_name = curr_file_name->next;
 	if (curr_file_name->next == NULL) {
 		if (renameHuh) {
-			printf("If 1\n");
 			if (updateParentAndRemove(curr_dir_inode, curr_file_name->data, renameHuh) == 0) {
-				printf("If 2\n");
 				return directory_lookup(curr_dir_inode, curr_file_name->data);
 			}
 			else return -1;
@@ -210,8 +199,6 @@ int get_parent_inum(const char * path, int removeHuh, int renameHuh, int dirHuh)
     curr_file_inum = directory_lookup(curr_dir_inode, curr_file_name->data);
     if (curr_file_inum == -1) break;
     curr_dir_inode = get_inode(curr_file_inum);
-    // CHECK IF CURR_FILE_NODE is a file or dir, if file, stop! If dir, keep going. 
-    if (curr_dir_inode->mode == 1) break;
 		if (curr_file_name->next->next == NULL) {
 			if (renameHuh) {
       	if (updateParentAndRemove(curr_dir_inode, curr_file_name->data, renameHuh) == 0) {
@@ -232,6 +219,10 @@ int removeFile(const char * path) {
 }
 
 int createFile(const char * path) { 
+	void * ibm = get_inode_bitmap();
+	void * bbm = get_blocks_bitmap();
+	bitmap_print(ibm, 256);
+	bitmap_print(bbm, 256);
 	return get_parent_inum(path, 0, 0, 0);
 }
 
@@ -242,7 +233,6 @@ int createDirectory(const char * path) {
 // ITERATE DON'T JUMP
 int directory_put(inode_t *dd, const char *name, int inum) {
 	if (dd->mode == 1) {
-		printf("given node is not a directory\n");
 		return -1;
 	}
 	if (dd->size == MAX_DIR_ENTRIES) return -1;

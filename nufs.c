@@ -40,7 +40,6 @@ int nufs_getattr(const char *path, struct stat *st) {
 		if (fileNode->mode == 0) st->st_mode = 040755; // DOUBLE CHECK MODE VALUES, WHATS DIR/FILE
 		else st->st_mode = 0100644;
 		st->st_size = fileNode->size;
-		printf("Size fileNode: %d\n", fileNode->size);
 		st->st_uid = getuid();
 		st->st_ino = fileInum;
 		st->st_nlink = fileNode->refs;

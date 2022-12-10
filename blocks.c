@@ -61,6 +61,7 @@ void blocks_init(const char *image_path) {
   void *ibm = get_inode_bitmap();  
   bitmap_put(bbm, 0, 1);
   bitmap_put(bbm, 1, 1);
+	printf("Inode's size %zu\n", sizeof(inode_t));
 	if (bitmap_get(ibm, 2) == 0) {
 		bitmap_put(ibm, 2, 1);
 		directory_init();

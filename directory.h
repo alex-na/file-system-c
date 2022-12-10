@@ -7,7 +7,7 @@
 #ifndef DIRECTORY_H
 #define DIRECTORY_H
 
-#define DIR_NAME_LENGTH 48
+#define DIR_NAME_LENGTH 28
 
 #include "blocks.h"
 #include "inode.h"
@@ -16,7 +16,6 @@
 typedef struct dirent {
   char name[DIR_NAME_LENGTH];
   int inum;
-  char _reserved[12];
 } dirent_t;
 
 void directory_init();
