@@ -58,10 +58,13 @@ void blocks_init(const char *image_path) {
 
   // block 0 stores the block bitmap and the inode bitmap
   void *bbm = get_blocks_bitmap();
-  
+  void *ibm = get_inode_bitmap();  
   bitmap_put(bbm, 0, 1);
   bitmap_put(bbm, 1, 1);
-  directory_init();
+	if (bitmap_get(ibm, 2) == 0) {
+		bitmap_put(ibm, 2, 1);
+		directory_init();
+	}
 }
 
 // Close the disk image.
