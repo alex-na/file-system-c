@@ -1,0 +1,9 @@
+make[1]: Entering directory '/home/user/project2'
+mkdir -p mnt || true
+./nufs -s -f mnt data.nufs
+nufs: storage.c:30: storage_read: Assertion `size > 0 && offset >= 0 && size <= BLOCK_SIZE' failed.
+make[1]: *** [Makefile:21: mount] Aborted (core dumped)
+make[1]: Leaving directory '/home/user/project2'
+make[1]: Entering directory '/home/user/project2'
+fusermount -u mnt || true
+make[1]: Leaving directory '/home/user/project2'

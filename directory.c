@@ -245,26 +245,17 @@ int directory_put(inode_t *dd, const char *name, int inum) {
 		printf("given node is not a directory\n");
 		return -1;
 	}
-	int num_files = dd->size;
 	if (dd->size == MAX_DIR_ENTRIES) return -1;
 	dirent_t * blk_dir = (dirent_t *) blocks_get_block(dd->block);
-	for (int i = 0; i < dd->size;++i) {
-		if (blk_dir[i].inum == -1) { // if the inumber is -1, replace it
-			strcpy(blk_dir[i].name, name);
-			blk_dir[i].inum = inum;
-			dd->size++;
-			return 0;
-		}
-	}
+	blk_dir[dd->size].inum = inum;
+	strcpy(blk_dir[dd->size].name, name);
 	dd->size++;
-	blk_dir[num_files].inum = inum;
-	strcpy(blk_dir[num_files].name, name);
 	return 0;
 }
 
 void directory_replace_last(inode_t * dd, int fromIndex) {
 	dirent_t * dir_entries = (dirent_t *) blocks_get_block(dd->block);
-	dir_entries[fromIndex].name = dir_entries[dd->size - 1].name;
+	strcpy(dir_entries[fromIndex].name, dir_entries[dd->size - 1].name);
 	dir_entries[fromIndex].inum = dir_entries[dd->size - 1].inum;
 	dir_entries[dd->size - 1].inum = -1;
 }
@@ -275,7 +266,7 @@ int directory_delete(inode_t *dd, const char *name) {
 	dirent_t * curr_dir_entries = (dirent_t *)blocks_get_block(dd->block);
 	for (int i = 0; i < dd->size; ++i) {
 		if (strcmp(curr_dir_entries[i].name, name) == 0) {
-			curr_dir_entries[i].inum = -1;
+			directory_replace_last(dd, i);
 			dd->size--;
 			return 0;
 		}
