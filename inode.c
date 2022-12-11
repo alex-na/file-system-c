@@ -39,3 +39,9 @@ int alloc_inode() {
   }
   return -1;
 }
+
+// freeing an inode
+void free_inode(int inum) {
+  void* ibm = get_inode_bitmap();
+  bitmap_put(ibm, inum, 0);
+}
