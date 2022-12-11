@@ -4,84 +4,86 @@
 
 // based on cs3650 starter code
 
+#include "directory.h"
+#include "inode.h"
+#include "slist.h"
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <string.h>
-#include <errno.h>
-#include "slist.h"
-#include "directory.h"
-#include "inode.h"
-#include "directory.h"
 
-void storage_init(const char *path) {
-	blocks_init(path);
-}
+// initialzing our storage by calling blocks_init()
+void storage_init(const char *path) { blocks_init(path); }
 
-int storage_stat(const char *path, struct stat *st) {}
-
+// reading a file
 int storage_read(const char *path, char *buf, size_t size, off_t offset) {
+  // perform lookup on the filepath to check whether it exists
   int fileInum = tree_lookup(path);
-  if (fileInum == -1) return -ENOENT;
+  if (fileInum == -1)
+    return -ENOENT; // throw error if not found
   assert(size > 0 && offset >= 0 && size <= BLOCK_SIZE);
-  inode_t * fileInode = get_inode(fileInum);
+  inode_t *fileInode = get_inode(fileInum);
   assert(fileInode != NULL);
-  void * blk = blocks_get_block(fileInode->block);
-	// fileInode's size = 4, size = 4096, offset = 0
-	if (size + offset > fileInode->size) size = fileInode->size - offset;
+  // get the block from the inode and read its contents to buffer based on size/offset
+  void *blk = blocks_get_block(fileInode->block);
+  if (size + offset > fileInode->size)
+    size = fileInode->size - offset;
   memcpy(buf, blk + offset, size);
   return size - offset;
 }
 
-int storage_write(const char *path, const char *buf, size_t size, off_t offset) {
-	int fileInum = tree_lookup(path);
-	if (fileInum == -1) return -ENOENT;
-	assert(size > 0 && offset >= 0 && size <= strlen(buf));
-	inode_t * fileInode = get_inode(fileInum);
-	assert(fileInode != NULL);
-	if (BLOCK_SIZE - (fileInode->size + size - offset) < 0) {
-		printf("No space in file\n");
-		return 0;
-	}
-	void * blk = blocks_get_block(fileInode->block);
+// writing to a file
+int storage_write(const char *path, const char *buf, size_t size,
+                  off_t offset) {
+  // perform lookup on the filepath to check whether it exists
+  int fileInum = tree_lookup(path);
+  if (fileInum == -1)
+    return -ENOENT; // throw error if not found
+  assert(size > 0 && offset >= 0 && size <= strlen(buf));
+  inode_t *fileInode = get_inode(fileInum);
+  assert(fileInode != NULL);
+  // checking whether there is enough space to write to the file based on the size/offset
+  if (BLOCK_SIZE - (fileInode->size + size - offset) < 0) {
+    printf("No space in file\n");
+    return 0;
+  }
+  // get the block from the inode and write to the file from the buffers contents
+  void *blk = blocks_get_block(fileInode->block);
   memcpy(blk + offset, buf, size);
-	fileInode->size += size;
+  fileInode->size += size;
   return size;
 }
 
+// truncating a file
 int storage_truncate(const char *path, off_t size) {
-	int fileInum = tree_lookup(path);
-	if (fileInum == -1) return -1;
-	inode_t * fileNode = get_inode(fileInum);
-	fileNode->size -= size;
-	return 0;
+  int fileInum = tree_lookup(path);
+  if (fileInum == -1)
+    return -1;
+  // decrement the size of the file based on the given size
+  inode_t *fileNode = get_inode(fileInum);
+  fileNode->size -= size;
+  return 0;
 }
 
+// opening a file/directory
 int storage_mknod(const char *path, int mode) {
-	printf("IN STORAGE_MKNOd\n"); 
-	if (S_ISDIR(mode)) {
-		return createDirectory(path);
-	}
-	else {
-		return createFile(path);	
-	}
+  printf("IN STORAGE_MKNOd\n");
+  if (S_ISDIR(mode)) {
+    return createDirectory(path);
+  } else {
+    return createFile(path);
+  }
 }
 
-// PREFERABLE, HAVE A GLOBAL VAR FOR ROOT INODE
-// THROW THE RIGHT ERROR CODES
-int storage_unlink(const char *path) {
-	return removeFile(path);
-}
-int storage_link(const char *from, const char *to) {}
+// unlinking a file/directory
+int storage_unlink(const char *path) { return removeFile(path); }
 
+// renaming a file/directory
 int storage_rename(const char *from, const char *to) {
-	return renameHelper(from, to);
+  return renameHelper(from, to);
 }
-
-int storage_set_time(const char *path, const struct timespec ts[2]) {}
-slist_t *storage_list(const char *path) {}
-

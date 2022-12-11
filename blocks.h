@@ -20,7 +20,7 @@ extern const int BLOCK_BITMAP_SIZE; // default = 256 / 8 = 32
 // ADD COMMENT LATER
 void *get_blocks_inode_table();
 
-/** 
+/**
  * Compute the number of blocks needed to store the given number of bytes.
  *
  * @param bytes Size of data to store in bytes.

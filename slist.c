@@ -1,10 +1,10 @@
 // based on cs3650 starter code
 
+#include "slist.h"
 #include <alloca.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include "slist.h"
 
 slist_t *s_cons(const char *text, slist_t *rest) {
   slist_t *xs = malloc(sizeof(slist_t));

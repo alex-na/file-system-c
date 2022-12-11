@@ -27,7 +27,7 @@ int bitmap_get(void *bm, int i);
 void bitmap_put(void *bm, int i, int v);
 
 /**
- * Pretty-print a bitmap. 
+ * Pretty-print a bitmap.
  *
  * @param bm Pointer to the bitmap.
  * @param size The number of bits to print.

@@ -15,14 +15,14 @@
 
 // Get the given bit from the bitmap.
 int bitmap_get(void *bm, int i) {
-  uint8_t *base = (uint8_t *) bm;
+  uint8_t *base = (uint8_t *)bm;
 
   return (base[byte_index(i)] >> bit_index(i)) & 1;
 }
 
 // Set the given bit in the bitmap to the given value.
 void bitmap_put(void *bm, int i, int v) {
-  uint8_t *base = (uint8_t *) bm;
+  uint8_t *base = (uint8_t *)bm;
 
   long bit_mask = nth_bit_mask(bit_index(i));
 

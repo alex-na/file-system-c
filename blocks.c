@@ -2,7 +2,7 @@
  * @file blocks.c
  * @author CS3650 staff
  *
- * Implementatino of a block-based abstraction over a disk image file.
+ * Implementation of a block-based abstraction over a disk image file.
  */
 #define _GNU_SOURCE
 #include <string.h>
@@ -56,16 +56,18 @@ void blocks_init(const char *image_path) {
       mmap(0, NUFS_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, blocks_fd, 0);
   assert(blocks_base != MAP_FAILED);
 
-  // block 0 stores the block bitmap and the inode bitmap
+  // initializing blocks to store bitmaps and inode table
+  // blocks 0 and 1 reserved for bitmaps
   void *bbm = get_blocks_bitmap();
-  void *ibm = get_inode_bitmap();  
+  void *ibm = get_inode_bitmap();
   bitmap_put(bbm, 0, 1);
   bitmap_put(bbm, 1, 1);
-	printf("Inode's size %zu\n", sizeof(inode_t));
-	if (bitmap_get(ibm, 2) == 0) {
-		bitmap_put(ibm, 2, 1);
-		directory_init();
-	}
+  printf("Inode's size %zu\n", sizeof(inode_t));
+  // setting inode table at block 2
+  if (bitmap_get(ibm, 2) == 0) {
+    bitmap_put(ibm, 2, 1);
+    directory_init();
+  }
 }
 
 // Close the disk image.
@@ -86,7 +88,7 @@ void *get_inode_bitmap() {
   uint8_t *block = blocks_get_block(0);
 
   // The inode bitmap is stored immediately after the block bitmap
-  return (void *) (block + BLOCK_BITMAP_SIZE);
+  return (void *)(block + BLOCK_BITMAP_SIZE);
 }
 
 // Allocate a new block and return its index.
@@ -111,8 +113,5 @@ void free_block(int bnum) {
   bitmap_put(bbm, bnum, 0);
 }
 
-void *get_blocks_inode_table() {
-  return blocks_get_block(1);
-}
-
-
+// returning the block containing inode table
+void *get_blocks_inode_table() { return blocks_get_block(1); }
